@@ -14,21 +14,37 @@ import java.text.NumberFormat;
 @NoArgsConstructor
 public class Suggestion {
     private String type;
+
     @SerializedName("box_id")
     private int boxId;
+
     @SerializedName("item_id")
     private int itemId;
+
     private int price;
     private int quantity;
     private String name;
+
     @SerializedName("command_id")
     private int id;
+
     private String message;
 
     @SerializedName("graph_data")
     @Setter
     private Data graphData;
 
+    // ✅ Added constructor for local suggestion generation
+    public Suggestion(String type, int itemId, String name, int price, int quantity) {
+        this.type = type;
+        this.boxId = 0;
+        this.itemId = itemId;
+        this.name = name;
+        this.price = price;
+        this.quantity = quantity;
+        this.id = 0;
+        this.message = toMessage();
+    }
 
     public boolean equals(Suggestion other) {
         return this.type.equals(other.type)
@@ -108,5 +124,3 @@ public class Suggestion {
         return s;
     }
 }
-
-

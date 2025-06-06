@@ -2,6 +2,9 @@ plugins {
 	id 'java'
 }
 
+group = 'com.flippingcopilot'
+version = '1.7.0'
+
 repositories {
 	mavenLocal()
 	maven {
@@ -13,17 +16,22 @@ repositories {
 def runeLiteVersion = 'latest.release'
 
 dependencies {
-	compileOnly group: 'net.runelite', name:'client', version: runeLiteVersion
+	// RuneLite dependencies
+	compileOnly group: 'net.runelite', name: 'client', version: runeLiteVersion
+
+	// Lombok
 	compileOnly 'org.projectlombok:lombok:1.18.20'
 	annotationProcessor 'org.projectlombok:lombok:1.18.20'
+
+	// Jackson for JSON parsing
+	implementation 'com.fasterxml.jackson.core:jackson-core:2.15.2'
+	implementation 'com.fasterxml.jackson.core:jackson-databind:2.15.2'
+
+	// Testing
 	testImplementation 'junit:junit:4.13.1'
-	testImplementation group: 'net.runelite', name:'client', version: runeLiteVersion
-	testImplementation group: 'net.runelite', name:'jshell', version: runeLiteVersion
+	testImplementation group: 'net.runelite', name: 'client', version: runeLiteVersion
+	testImplementation group: 'net.runelite', name: 'jshell', version: runeLiteVersion
 }
-
-
-group = 'com.flippingcopilot'
-version = '1.7.0'
 
 tasks.withType(JavaCompile) {
 	options.encoding = 'UTF-8'
