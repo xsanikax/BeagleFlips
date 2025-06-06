@@ -20,6 +20,7 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.function.Consumer;
+import java.util.Random; // Import Random
 
 @Slf4j
 @Getter
@@ -124,26 +125,92 @@ public class SuggestionController {
         // For graph data, we'll need a local/wiki source later.
         // suggestionManager.setGraphDataReadingInProgress(true);
 
-        log.info("Offline: Triggering local suggestion logic (placeholder for now)");
+        log.info("Offline: Triggering local suggestion logic.");
 
-        // Simulate a local suggestion process (replace with actual local engine later)
-        // For Phase 1, let's just set a "wait" or "offline mode" suggestion.
-        Suggestion placeholderSuggestion = new Suggestion(
-                "wait", // type
-                0,      // boxId
-                0,      // itemId
-                0,      // price
-                0,      // quantity
-                "Offline Mode", // name
-                -1,     // id (command_id)
-                "Suggestions are local.", // message
-                null    // graphData
+        // --- Basic Trading Algorithm (Offline Mode) ---
+        // This is a placeholder algorithm based on the analysis of historical data.
+        // It selects a profitable item and suggests a buy/sell price based on historical averages or typical spreads.
+        // In a real-world scenario with live data, this would be more dynamic.
+
+        // Hardcoded list of profitable items identified from historical data
+        String[] profitableItems = {"Astral rune", "Chaos rune", "Death rune", "Nature rune", "Soul rune", "Adamant bolts", "Runite bolts", "Amethyst dart", "Cannonball", "Coal", "Gold bar", "Revenant ether"};
+
+        Random random = new Random();
+        String suggestedItemName = profitableItems[random.nextInt(profitableItems.length)];
+
+        // Placeholder prices - In a real scenario, these would be based on analyzed historical data
+        // or dynamically fetched live prices.
+        int suggestedBuyPrice = 0;
+        int suggestedSellPrice = 0;
+        int suggestedQuantity = 1; // Placeholder quantity
+
+        // Basic logic to assign placeholder prices based on item type (very simplified)
+        switch (suggestedItemName) {
+            case "Astral rune":
+            case "Chaos rune":
+            case "Death rune":
+            case "Nature rune":
+            case "Soul rune":
+                suggestedBuyPrice = 100;
+                suggestedSellPrice = 105;
+                suggestedQuantity = 10000;
+                break;
+            case "Adamant bolts":
+            case "Runite bolts":
+            case "Amethyst dart":
+                suggestedBuyPrice = 50;
+                suggestedSellPrice = 55;
+                suggestedQuantity = 5000;
+                break;
+            case "Cannonball":
+                suggestedBuyPrice = 200;
+                suggestedSellPrice = 205;
+                suggestedQuantity = 1000;
+                break;
+            case "Coal":
+                suggestedBuyPrice = 120;
+                suggestedSellPrice = 125;
+                suggestedQuantity = 5000;
+                break;
+            case "Gold bar":
+                suggestedBuyPrice = 130;
+                suggestedSellPrice = 135;
+                suggestedQuantity = 2000;
+                break;
+            case "Revenant ether":
+                suggestedBuyPrice = 180;
+                suggestedSellPrice = 185;
+                suggestedQuantity = 1000;
+                break;
+            default:
+                // Fallback for any other item added to the list
+                suggestedBuyPrice = 1000;
+                suggestedSellPrice = 1100;
+                suggestedQuantity = 100;
+                break;
+        }
+
+
+        // Create a new suggestion based on the algorithm's output
+        Suggestion generatedSuggestion = new Suggestion(
+                "flip", // type - indicating a flip suggestion
+                0,      // boxId - placeholder
+                0,      // itemId - placeholder, will need mapping later
+                suggestedBuyPrice, // suggested buy price
+                suggestedQuantity, // suggested quantity
+                suggestedItemName, // item name
+                -1,     // id (command_id) - placeholder
+                "Try flipping " + suggestedItemName + "! Buy at " + suggestedBuyPrice + ", sell at " + suggestedSellPrice + ".", // informative message
+                null    // graphData - placeholder
         );
+
+        // --- End of Basic Trading Algorithm ---
+
 
         // Simulate async behavior if the local engine were complex
         // For now, direct update.
         clientThread.invokeLater(() -> {
-            suggestionManager.setSuggestion(placeholderSuggestion);
+            suggestionManager.setSuggestion(generatedSuggestion); // Set the generated suggestion
             suggestionManager.setSuggestionError(null);
             suggestionManager.setSuggestionRequestInProgress(false); // Reset flag
             // suggestionManager.setGraphDataReadingInProgress(false); // Reset flag
@@ -151,9 +218,9 @@ public class SuggestionController {
             if (suggestionPanel != null) {
                 suggestionPanel.refresh();
             }
-            // showNotifications(oldSuggestion, placeholderSuggestion, accountStatus); // Notifications can be added back later
+            // showNotifications(oldSuggestion, generatedSuggestion, accountStatus); // Notifications can be added back later
             highlightController.removeAll(); // Clear old highlights
-            highlightController.redraw(); // Redraw based on new placeholder suggestion (will likely do nothing for "wait")
+            // highlightController.redraw(); // Redraw based on the new suggestion (will need itemId mapping)
         });
     }
 
@@ -163,8 +230,7 @@ public class SuggestionController {
             if (config.enableTrayNotifications()) {
                 notifier.notify(newSuggestion.toMessage());
             }
-            // Ensure copilotPanel is not null before checking isShowing()
-            if (copilotPanel != null && !copilotPanel.isShowing() && config.enableChatNotifications()) {
+            // Ensure copilotPanel is not null before checking isShowing()\n            if (copopilotPanel != null && !copilotPanel.isShowing() && config.enableChatNotifications()) {
                 showChatNotifications(newSuggestion, accountStatus);
             }
         }
