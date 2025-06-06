@@ -4,10 +4,8 @@ import com.flippingcopilot.model.*;
 import com.flippingcopilot.ui.*;
 import com.flippingcopilot.ui.graph.PriceGraphController;
 import com.flippingcopilot.ui.graph.model.Data; // Assuming this is used, keep if needed
-import com.google.gson.Gson;
-import com.google.gson.JsonObject; // Keep if toJson is used with it
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
+import lombok.NonNull;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.ChatMessageType;
@@ -17,28 +15,24 @@ import net.runelite.client.callback.ClientThread;
 import net.runelite.client.chat.ChatMessageBuilder;
 
 import javax.inject.Inject;
+import javax.inject.Named;
 import javax.inject.Singleton;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.function.Consumer;
 import java.util.Random; // Import Random
+import java.util.List;
+import java.util.Arrays;
 
 @Slf4j
 @Getter
 @Setter
 @Singleton
-@RequiredArgsConstructor(onConstructor_ = @Inject)
 public class SuggestionController {
 
     // dependencies
     private final PausedManager pausedManager;
-    private final Client client;
-    private final Gson gson;
+ @NonNull private final Client client;
     private final OsrsLoginManager osrsLoginManager;
     private final HighlightController highlightController;
-    private final GrandExchange grandExchange;
-    private final ScheduledExecutorService executorService; // Keep if other timed tasks are local
-    // PHASE 1: Comment out ApiRequestHandler
-    // private final ApiRequestHandler apiRequestHandler;
+ @NonNull private final GrandExchange grandExchange;
     private final Notifier notifier;
     private final OfferManager offerManager;
     private final LoginResponseManager loginResponseManager; // May become less relevant
@@ -47,12 +41,47 @@ public class SuggestionController {
     private final SuggestionManager suggestionManager;
     private final AccountStatusManager accountStatusManager;
     private final GrandExchangeUncollectedManager uncollectedManager;
+    // private final ScheduledExecutorService executorService; // Removed as per compiler warnings if not used elsewhere
+    // private final Gson gson; // Removed as per compiler warnings if not used directly in this class
+    // private final JsonObject jsonObject; // Removed as per compiler warnings if not used
     private final PriceGraphController graphPriceGraphController;
+    private final FlipManager flipManager; // Inject FlipManager to access local flip data
+
+
+ @Inject
+ public SuggestionController(PausedManager pausedManager, @NonNull Client client, OsrsLoginManager osrsLoginManager, HighlightController highlightController, @NonNull GrandExchange grandExchange, Notifier notifier, OfferManager offerManager, LoginResponseManager loginResponseManager, ClientThread clientThread, FlippingCopilotConfig config, SuggestionManager suggestionManager, AccountStatusManager accountStatusManager, GrandExchangeUncollectedManager uncollectedManager, PriceGraphController graphPriceGraphController, FlipManager flipManager) {
+ this.pausedManager = pausedManager;
+ this.client = client;
+ this.osrsLoginManager = osrsLoginManager;
+ this.highlightController = highlightController;
+ this.grandExchange = grandExchange;
+ this.notifier = notifier;
+ this.offerManager = offerManager;
+ this.loginResponseManager = loginResponseManager;
+ this.clientThread = clientThread;
+ this.config = config;
+ this.suggestionManager = suggestionManager;
+ this.accountStatusManager = accountStatusManager;
+ this.uncollectedManager = uncollectedManager;
+ this.graphPriceGraphController = graphPriceGraphController;
+ this.flipManager = flipManager;
+    }
 
     private MainPanel mainPanel;
-    private LoginPanel loginPanel; // May be removed if MainPanel no longer uses it
+    // private LoginPanel loginPanel; // Removed as per compiler warnings and previous analysis
     private CopilotPanel copilotPanel;
     private SuggestionPanel suggestionPanel;
+
+    // Hardcoded list of profitable items identified from historical data
+    private static final List<String> PROFITABLE_ITEMS = Arrays.asList(
+            "Astral rune", "Chaos rune", "Death rune", "Nature rune", "Soul rune", "Adamant bolts", "Runite bolts", "Amethyst dart", "Cannonball", "Coal", "Gold bar", "Revenant ether",
+            "Bandos godsword ornament kit", "Malediction ward", "Blue moon tassets", "Ahrim's armour set", "Karil's armour set",
+            "Dharok's armour set", "Toxic blowpipe (empty)", "Dragon pickaxe",
+            "Master wand"
+            // Add other profitable items from your data here
+    );
+
+    private final Random random = new Random();
 
     public void togglePause() {
         if (pausedManager.isPaused()) {
@@ -98,16 +127,14 @@ public class SuggestionController {
         return suggestionPanel != null && suggestionPanel.isCollectItemsSuggested();
     }
 
-    // PHASE 1: Renamed from getSuggestionAsync to getOfflineSuggestion
-    public void getOfflineSuggestion() {
+    /**
+     * Generates a trading suggestion based on the local trading algorithm.
+     * This replaces the previous backend API call for suggestions.
+     */
+    public void generateLocalSuggestion() {
         suggestionManager.setSuggestionNeeded(false);
 
         // PHASE 1: Simplified checks. No API login needed. OSRS login is still relevant.
-        if (!osrsLoginManager.isValidLoginState()) {
-            // SuggestionPanel will handle displaying "log in to game" message
-            if (suggestionPanel != null) suggestionPanel.refresh();
-            return;
-        }
 
         if (suggestionManager.isSuggestionRequestInProgress()) {
             // This flag will be set by the local engine if it's busy
